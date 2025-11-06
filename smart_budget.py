@@ -16,7 +16,7 @@ import os
 # Lembre-se de instalar o SDK do Google: pip install google-genai
 # E certifique-se de ter as bibliotecas auxiliares: pip install pandas matplotlib openpyxl xlsxwriter
 #
-GEMINI_API_KEY = "AIzaSyB-DqAdn0St1mW2CpX5mzy5HTUAjvkfXog" 
+GEMINI_API_KEY = "CHAVE DA API" 
 #
 # ----------------------------------------------------------------------
 client = genai.Client(api_key=GEMINI_API_KEY)

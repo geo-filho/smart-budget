@@ -74,7 +74,7 @@ def atualizar_renda_label():
     saldo = renda_total - total_gastos
     cor_saldo = "danger" if saldo < 0 else "success"
     # Atualiza label com cor apropriada usando ttkbootstrap styles
-    lbl_renda_total.config(text=f"💰 Renda Total: R$ {renda_total:,.2f}    💸 Saldo: R$ {saldo:,.2f}")
+    lbl_renda_total.config(text=f"💰 Renda Total: R$ {renda_total:,.2f}      💸 Saldo: R$ {saldo:,.2f}")
     # Aplicar cor no label -> usando foreground tag via style
     if saldo < 0:
         lbl_renda_total.configure(foreground="#B00020")
@@ -142,7 +142,7 @@ def carregar_csv():
             df_temp["departamento"] = df_temp["departamento"].apply(lambda x: capitalizar_normalizado(normalizar_texto(x)))
             df_temp = df_temp.rename(columns={'gasto_total': 'gasto_total'})
             gastos_detalhe_bruto = pd.concat([gastos_detalhe_bruto,
-                                              df_temp[['id_unico', 'data_lancamento', 'departamento', 'gasto_total', 'descricao_original']]],
+                                             df_temp[['id_unico', 'data_lancamento', 'departamento', 'gasto_total', 'descricao_original']]],
                                              ignore_index=True)
             recarregar_dados_agregados()
             messagebox.showinfo("Sucesso", "CSV de Gastos carregado e dados normalizados/agregados!")
@@ -285,6 +285,9 @@ def gerar_relatorio_ia():
     except Exception as e:
         messagebox.showerror("Erro IA", f"Não foi possível gerar o relatório da IA.\nErro: {e}")
 
+# ----------------------------------------------------------------------------------------------------
+# FUNÇÃO CORRIGIDA: REMOVE 'descricao_original' do DataFrame de exportação detalhado
+# ----------------------------------------------------------------------------------------------------
 def exportar_para_xls():
     global renda_total, total_gastos, gastos_detalhe_bruto, ganhos_detalhe_bruto, dados, ganhos_df
     if gastos_detalhe_bruto.empty and ganhos_detalhe_bruto.empty:
@@ -294,48 +297,71 @@ def exportar_para_xls():
     if not caminho:
         return
     try:
+        # 1. Preparar Gastos para exportação
         gastos_detalhe_export = gastos_detalhe_bruto.rename(columns={'departamento': 'Categoria', 'gasto_total': 'Valor'})
         gastos_detalhe_export['Tipo'] = 'Gasto'
         gastos_detalhe_export['Valor'] = -gastos_detalhe_export['Valor']
-        gastos_detalhe_export = gastos_detalhe_export.rename(columns={'descricao_original': 'Descricao_Bruta'})
+        # Não renomeamos 'descricao_original' e não a incluiremos no df final.
+        
+        # 2. Preparar Ganhos para exportação
         ganhos_detalhe_export = ganhos_detalhe_bruto.rename(columns={'fonte': 'Categoria', 'valor': 'Valor'})
         ganhos_detalhe_export['Tipo'] = 'Ganho'
-        ganhos_detalhe_export = ganhos_detalhe_export.rename(columns={'descricao_original': 'Descricao_Bruta'})
+        # Não renomeamos 'descricao_original' e não a incluiremos no df final.
+        
+        # 3. Concatenar (selecionando apenas as colunas desejadas: sem descricao_original)
         df_detalhe_completo = pd.concat([
-            ganhos_detalhe_export[['data_lancamento', 'Tipo', 'Categoria', 'Valor', 'Descricao_Bruta']],
-            gastos_detalhe_export[['data_lancamento', 'Tipo', 'Categoria', 'Valor', 'Descricao_Bruta']]
+            ganhos_detalhe_export[['data_lancamento', 'Tipo', 'Categoria', 'Valor']],
+            gastos_detalhe_export[['data_lancamento', 'Tipo', 'Categoria', 'Valor']]
         ], ignore_index=True)
+
         df_detalhe_completo = df_detalhe_completo.fillna('N/A').sort_values(by=['data_lancamento', 'Tipo'], ascending=[True, False])
+        
+        # Remover coluna id_unico se existir
         if 'id_unico' in df_detalhe_completo.columns:
             df_detalhe_completo = df_detalhe_completo.drop(columns=['id_unico'], errors='ignore')
+            
+        # Resumo de Totais
         df_totais = pd.DataFrame({
             "Métrica": ["Renda Total", "Gastos Totais", "Saldo"],
             "Valor": [renda_total, total_gastos, renda_total - total_gastos]
         })
+        
+        # Resumo por Categoria
         df_resumo_categorias = pd.concat([
             ganhos_df.rename(columns={'fonte': 'Categoria', 'valor': 'Valor'}).assign(Tipo='Ganho')[['Tipo', 'Categoria', 'Valor']],
             dados.rename(columns={'departamento': 'Categoria', 'gasto_total': 'Valor'}).assign(Tipo='Gasto')[['Tipo', 'Categoria', 'Valor']]
         ], ignore_index=True).sort_values(by=['Tipo', 'Valor'], ascending=[False, False])
+        
+        # Exportação para Excel
         with pd.ExcelWriter(caminho, engine='xlsxwriter') as writer:
             workbook = writer.book
             money_fmt = workbook.add_format({'num_format': 'R$ #,##0.00', 'font_size': 10})
+            
+            # Detalhe Completo
             df_detalhe_completo.to_excel(writer, sheet_name='Detalhe_Completo', index=False, freeze_panes=(1, 0))
             worksheet_detalhe = writer.sheets['Detalhe_Completo']
-            worksheet_detalhe.set_column('E:E', 15, money_fmt)
+            # Ajuste na formatação de coluna: 'Valor' é agora a Coluna D (índice 3), não mais E (índice 4)
+            worksheet_detalhe.set_column('D:D', 15, money_fmt) # Coluna 'Valor'
             worksheet_detalhe.set_column('A:A', 15)
-            worksheet_detalhe.set_column('B:D', 15)
-            worksheet_detalhe.set_column('F:F', 40)
+            worksheet_detalhe.set_column('B:C', 15)
+            
+            # Resumo por Categoria
             df_resumo_categorias.to_excel(writer, sheet_name='Resumo_Categorias', index=False)
             worksheet_resumo = writer.sheets['Resumo_Categorias']
             worksheet_resumo.set_column('C:C', 15, money_fmt)
             worksheet_resumo.set_column('A:B', 15)
+            
+            # Resumo Geral
             df_totais.to_excel(writer, sheet_name='Resumo_Geral', index=False)
             worksheet_totais = writer.sheets['Resumo_Geral']
             worksheet_totais.set_column('B:B', 15, money_fmt)
             worksheet_totais.set_column('A:A', 15)
+            
         messagebox.showinfo("Sucesso", f"Dados exportados com sucesso para:\n{caminho}")
     except Exception as e:
         messagebox.showerror("Erro de Exportação", f"Não foi possível exportar os dados para Excel.\nErro: {e}")
+# ----------------------------------------------------------------------------------------------------
+
 
 def atualizar_tabela():
     for row in tabela.get_children():
@@ -491,7 +517,7 @@ top_frame.pack(side=tk.TOP, fill="x", padx=12, pady=(12, 6))
 header_label = ttk.Label(top_frame, text="💸 Smart Budget", font=("Inter", 16, "bold"))
 header_label.pack(side=tk.LEFT)
 
-lbl_renda_total = ttk.Label(top_frame, text=f"💰 Renda Total: R$ {renda_total:,.2f}    💸 Saldo: R$ 0.00", font=("Inter", 11, "bold"))
+lbl_renda_total = ttk.Label(top_frame, text=f"💰 Renda Total: R$ {renda_total:,.2f}      💸 Saldo: R$ 0.00", font=("Inter", 11, "bold"))
 lbl_renda_total.pack(side=tk.LEFT, padx=20)
 
 def toggle_theme():

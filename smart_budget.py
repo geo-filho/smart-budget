@@ -33,7 +33,8 @@ GEMINI_API_KEY = "AIzaSyB-DqAdn0St1mW2CpX5mzy5HTUAjvkfXog" # Substitua pela sua 
 client = None
 if GEMINI_API_KEY and GEMINI_API_KEY.startswith("AIza"):
     try:
-        client = genai.Client(api_key=GEMINI_API_KEY)
+        # AQUI VOCÊ DEVE INSERIR SUA CHAVE REAL
+        client = genai.Client(api_key="AIzaSyB-DqAdn0St1mW2CpX5mzy5HTUAjvkfXog") 
     except Exception as e:
         print(f"Atenção: Erro ao inicializar o cliente Gemini. Funções de IA não funcionarão. Erro: {e}")
 # ----------------------------------------------------------------------
@@ -545,7 +546,9 @@ def deletar_lancamento_selecionado():
         messagebox.showwarning("Aviso", "Selecione um item da tabela para deletar.")
         return
         
-    iid_selecionado = tabela.item(selecionado, 'iid') 
+    # CORREÇÃO: Removida a linha que causava o TclError, 'selecionado' já é o iid
+    # iid_selecionado = tabela.item(selecionado, 'iid') 
+    
     valores = tabela.item(selecionado, 'values')
     
     if not valores or len(valores) < 3:
@@ -555,7 +558,7 @@ def deletar_lancamento_selecionado():
     categoria = valores[1]
     tipo = valores[2]
     
-    confirmar = messagebox.askyesno("Confirmar Exclusão", f"Tem certeza que deseja deletar TODAS as entradas da categoria '{categoria}' ({tipo})?")
+    confirmar = messagebox.askyesno("Confirmar Exclusão", f"Tem certeza que deseja deletar TODAS as entradas da categoria '{categoria}' ({tipo})? Isso é IRREVERSÍVEL.")
 
     if confirmar:
         if tipo == "Ganho":
@@ -1212,7 +1215,6 @@ btn_adicionar_ia.pack(side=tk.LEFT, padx=6)
 btn_exportar_xls = tb.Button(actions_frame, text="Exportar para Excel (.xlsx)", bootstyle="success", command=exportar_para_xls)
 btn_exportar_xls.pack(side=tk.LEFT, padx=6)
 
-# CORREÇÃO: 'generar_relatorio_ia' corrigido para 'gerar_relatorio_ia'
 btn_relatorio_ia = tb.Button(actions_frame, text="Gerar Relatório IA Inteligente", bootstyle="primary", command=gerar_relatorio_ia) 
 btn_relatorio_ia.pack(side=tk.LEFT, padx=6)
 

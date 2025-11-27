@@ -1,0 +1,117 @@
+{
+    "gastos_detalhe_bruto": [
+        {
+            "id_unico": "id_202511131956239004271915",
+            "data_lancamento": "2025-11-13",
+            "departamento": "Alimentacao",
+            "gasto_total": 520.0,
+            "descricao_original": "Alimentação"
+        },
+        {
+            "id_unico": "id_202511131956239004881774",
+            "data_lancamento": "2025-11-13",
+            "departamento": "Transporte",
+            "gasto_total": 180.0,
+            "descricao_original": "Transporte"
+        },
+        {
+            "id_unico": "id_202511131956239005014180",
+            "data_lancamento": "2025-11-13",
+            "departamento": "Lazer",
+            "gasto_total": 250.0,
+            "descricao_original": "Lazer"
+        },
+        {
+            "id_unico": "id_202511131956239005102071",
+            "data_lancamento": "2025-11-13",
+            "departamento": "Moradia",
+            "gasto_total": 1200.0,
+            "descricao_original": "Moradia"
+        },
+        {
+            "id_unico": "id_202511131956239005184727",
+            "data_lancamento": "2025-11-13",
+            "departamento": "Educacao",
+            "gasto_total": 300.0,
+            "descricao_original": "Educação"
+        },
+        {
+            "id_unico": "id_202511131956239005265050",
+            "data_lancamento": "2025-11-13",
+            "departamento": "Saude",
+            "gasto_total": 220.0,
+            "descricao_original": "Saúde"
+        },
+        {
+            "id_unico": "id_202511131956239005331106",
+            "data_lancamento": "2025-11-13",
+            "departamento": "Servicos",
+            "gasto_total": 150.0,
+            "descricao_original": "Serviços"
+        },
+        {
+            "id_unico": "id_202511131956239005488508",
+            "data_lancamento": "2025-11-13",
+            "departamento": "Tecnologia",
+            "gasto_total": 350.0,
+            "descricao_original": "Tecnologia"
+        },
+        {
+            "id_unico": "id_202511131956239005552832",
+            "data_lancamento": "2025-11-13",
+            "departamento": "Outros",
+            "gasto_total": 90.0,
+            "descricao_original": "Outros"
+        },
+        {
+            "id_unico": "id_202511131957060445251817",
+            "data_lancamento": "2025-11-13",
+            "departamento": "Mecanico",
+            "gasto_total": 500.0,
+            "descricao_original": "gastei 500 no mecanico"
+        }
+    ],
+    "ganhos_detalhe_bruto": [
+        {
+            "id_unico": "id_202511131956139737992833",
+            "data_lancamento": "2025-11-13",
+            "fonte": "Salario fixo",
+            "valor": 5000.0,
+            "descricao_original": "Salário Fixo Mensal (Salario fixo)"
+        },
+        {
+            "id_unico": "id_202511131956496466587442",
+            "data_lancamento": "2025-11-13",
+            "fonte": "Extra",
+            "valor": 500.0,
+            "descricao_original": "500 extra"
+        }
+    ],
+    "poupancas_detalhe": [
+        {
+            "id_meta": "id_202511131959419792644122",
+            "id_lancamento": "id_202511131959419794101222",
+            "data_lancamento": "2025-11-13",
+            "meta": "Carro 2026",
+            "descricao": "Meta inicial de R$ 40,000.00 - Criada em 13/11/2025",
+            "valor_deposito": 0.0,
+            "valor_meta_total": 40000.0,
+            "valor_atingido": 0.0
+        },
+        {
+            "id_meta": "id_202511131959419792644122",
+            "id_lancamento": "id_202511131959577514242788",
+            "data_lancamento": "2025-11-13",
+            "meta": "Carro 2026",
+            "descricao": "Depósito em Carro 2026 - R$ 1,000.00",
+            "valor_deposito": 1000.0,
+            "valor_meta_total": 40000.0,
+            "valor_atingido": 1000.0
+        }
+    ],
+    "lista_ativos_acompanhados": [
+        "PETR4.SA",
+        "VALE3.SA",
+        "BBDC4.SA"
+    ]
+}

@@ -50,13 +50,6 @@
             "descricao_original": "Serviços"
         },
         {
-            "id_unico": "id_202511131956239005488508",
-            "data_lancamento": "2025-11-13",
-            "departamento": "Tecnologia",
-            "gasto_total": 350.0,
-            "descricao_original": "Tecnologia"
-        },
-        {
             "id_unico": "id_202511131956239005552832",
             "data_lancamento": "2025-11-13",
             "departamento": "Outros",

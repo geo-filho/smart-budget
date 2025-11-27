@@ -29,12 +29,12 @@ except Exception:
 # ----------------------------------------------------------------------
 # ---------- CONFIGURAÇÃO DA API - SUBSTITUA PELA SUA CHAVE REAL ----------
 # ----------------------------------------------------------------------
-GEMINI_API_KEY = "AIzaSyB-DqAdn0St1mW2CpX5mzy5HTUAjvkfXog" # Substitua pela sua chave REAL
+GEMINI_API_KEY = "AIzaSyBjhHyIOJ9u-KG4LmlK2O0OcTE8Zw5TSAA" # Substitua pela sua chave REAL
 client = None
 if GEMINI_API_KEY and GEMINI_API_KEY.startswith("AIza"):
     try:
         # AQUI VOCÊ DEVE INSERIR SUA CHAVE REAL
-        client = genai.Client(api_key="AIzaSyB-DqAdn0St1mW2CpX5mzy5HTUAjvkfXog") 
+        client = genai.Client(api_key="AIzaSyBjhHyIOJ9u-KG4LmlK2O0OcTE8Zw5TSAA") 
     except Exception as e:
         print(f"Atenção: Erro ao inicializar o cliente Gemini. Funções de IA não funcionarão. Erro: {e}")
 # ----------------------------------------------------------------------
@@ -387,6 +387,52 @@ def atualizar_tabela_poupanca():
     tabela_poupancas.tag_configure('progresso', foreground='navy', background='#E6F0F7')
 
 # ---------------------- FUNÇÕES DE LANÇAMENTO E IA ----------------------
+
+# Adicione esta função na parte de "FUNÇÕES DE DADOS/AGREGAÇÃO"
+def gerar_contexto_financeiro_ia():
+    """Gera um resumo dos dados financeiros atuais para o contexto da IA."""
+    
+    # 1. Resumo da Renda
+    contexto = f"CONTEXTO FINANCEIRO DO USUÁRIO:\n"
+    contexto += f"- Renda Mensal Base Atual: R$ {renda_total:,.2f}\n"
+    
+    # 2. Resumo de Gastos por Categoria
+    if not dados.empty:
+        total_gasto = dados["gasto_total"].sum()
+        contexto += f"- Total de Gastos Acumulados: R$ {total_gasto:,.2f}\n"
+        
+        # Top 5 gastos por categoria
+        top_gastos = dados.sort_values(by="gasto_total", ascending=False).head(5)
+        contexto += "- Top 5 Gastos por Categoria:\n"
+        for index, row in top_gastos.iterrows():
+            contexto += f"  - {row['departamento']}: R$ {row['gasto_total']:,.2f}\n"
+    
+    # 3. Resumo de Ganhos (últimos 3 meses - Exemplo)
+    if not ganhos_detalhe_bruto.empty:
+        try:
+            df_ganhos = ganhos_detalhe_bruto.copy()
+            df_ganhos['data_lancamento'] = pd.to_datetime(df_ganhos['data_lancamento'])
+            df_ganhos['Mes_Ano'] = df_ganhos['data_lancamento'].dt.to_period('M')
+            
+            ganhos_recente = df_ganhos.tail(3).groupby('Mes_Ano')['valor'].sum()
+            
+            contexto += f"- Ganhos Totais Registrados nos Últimos {len(ganhos_recente)} Meses:\n"
+            for periodo, valor in ganhos_recente.items():
+                 contexto += f"  - {periodo}: R$ {valor:,.2f}\n"
+        except Exception:
+            pass # Ignora se a coluna de data falhar
+            
+    # 4. Sugestão de Perfil de Risco (Exemplo Simplificado)
+    # Você pode adicionar lógica mais complexa aqui, como:
+    # risco = "Alto" if total_gasto / renda_total > 0.8 else "Baixo"
+    if 'total_gasto' in locals():
+        if total_gasto > renda_total * 0.7:
+            contexto += "\nAVISO DE PERFIL: O usuário possui uma alta taxa de comprometimento da renda (Alto Risco).\n"
+        else:
+            contexto += "\nAVISO DE PERFIL: O usuário possui uma baixa taxa de comprometimento da renda (Baixo Risco).\n"
+            
+    return contexto
+
 def definir_renda_base():
     global ganhos_detalhe_bruto
     fonte_chave = "salario fixo"
@@ -1062,24 +1108,36 @@ def carregar_investimentos():
 
 # ---------------------- CHATBOT DE ECONOMIA ----------------------
 
+# ---------------------- CHATBOT DE ECONOMIA ----------------------
+
 def iniciar_sessao_chatbot():
-    """Inicia ou reinicia a sessão de chat do Gemini com System Instruction."""
+    """Inicia ou reinicia a sessão de chat do Gemini com System Instruction, INCLUINDO CONTEXTO FINANCEIRO."""
     global chat_session
     if not client:
-        chat_text.config(state=tk.NORMAL)
-        chat_text.insert(tk.END, "🤖 Chatbot: Não foi possível iniciar. Chave API do Gemini não configurada ou inválida.\n", "erro")
-        chat_text.config(state=tk.DISABLED)
+# ... (código existente) ...
         return
     
+    # >>>>>>>>>>>>> ALTERAÇÃO AQUI: GERAR E INSERIR CONTEXTO <<<<<<<<<<<<<
+    contexto_financeiro = gerar_contexto_financeiro_ia() # Chama a nova função
+    
     # Define a persona do chatbot
-    system_instruction = ("Você é o 'Smart Budget AI Assistant', um especialista em finanças pessoais, economia e investimentos, com foco no mercado brasileiro. "
-                          "Seu tom deve ser amigável, educado e informativo. Responda apenas perguntas relacionadas a finanças, economia e investimentos. "
-                          "Se a pergunta estiver fora de contexto, peça ao usuário para refazer a pergunta focando em tópicos financeiros. "
-                          "Use negrito (**) e listas para organizar as informações complexas.")
+    system_instruction = (
+        "Você é o 'Smart Budget AI Assistant', um especialista em finanças pessoais, economia e investimentos, com foco no mercado brasileiro. "
+        "Seu tom deve ser amigável, educado e informativo. Responda apenas perguntas relacionadas a finanças, economia e investimentos. "
+        "Se a pergunta estiver fora de contexto, peça ao usuário para refazer a pergunta focando em tópicos financeiros. "
+        "Use negrito (**) e listas para organizar as informações complexas.\n\n"
+        
+        # INCLUA O CONTEXTO FINANCEIRO NO PROMPT INICIAL DO SISTEMA
+        f"{contexto_financeiro}\n" 
+        "***USE AS INFORMAÇÕES DE 'CONTEXTO FINANCEIRO DO USUÁRIO' ACIMA PARA PERSONALIZAR E EMBASAR SUAS RESPOSTAS SOBRE ORÇAMENTO E VIABILIDADE DE COMPRAS/PARCELAMENTOS.***"
+    )
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     config = types.GenerateContentConfig(
         system_instruction=system_instruction
     )
+    
+# ... (restante do código da função continua igual) ...
     
     chat_session = client.chats.create(
         model="gemini-2.5-flash", 

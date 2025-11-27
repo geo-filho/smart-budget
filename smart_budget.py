@@ -29,12 +29,12 @@ except Exception:
 # ----------------------------------------------------------------------
 # ---------- CONFIGURAÇÃO DA API - SUBSTITUA PELA SUA CHAVE REAL ----------
 # ----------------------------------------------------------------------
-GEMINI_API_KEY = "AIzaSyBjhHyIOJ9u-KG4LmlK2O0OcTE8Zw5TSAA" # Substitua pela sua chave REAL
+GEMINI_API_KEY = "CHAVE DA API" # Substitua pela sua chave REAL
 client = None
 if GEMINI_API_KEY and GEMINI_API_KEY.startswith("AIza"):
     try:
         # AQUI VOCÊ DEVE INSERIR SUA CHAVE REAL
-        client = genai.Client(api_key="AIzaSyBjhHyIOJ9u-KG4LmlK2O0OcTE8Zw5TSAA") 
+        client = genai.Client(api_key="CHAVE DA API") 
     except Exception as e:
         print(f"Atenção: Erro ao inicializar o cliente Gemini. Funções de IA não funcionarão. Erro: {e}")
 # ----------------------------------------------------------------------

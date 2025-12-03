@@ -52,7 +52,7 @@ gastos_detalhe_bruto = pd.DataFrame(columns=["id_unico", "data_lancamento", "dep
 ganhos_detalhe_bruto = pd.DataFrame(columns=["id_unico", "data_lancamento", "fonte", "valor", "descricao_original"])
 poupancas_detalhe = pd.DataFrame(columns=["id_meta", "id_lancamento", "data_lancamento", "meta", "descricao", "valor_deposito", "valor_meta_total", "valor_atingido"])
 
-# Lista de ativos de investimento - CORRIGIDO O PADRÃO PARA B3 (.SA)
+# Lista de ativos de investimento
 LISTA_ATIVOS_ACOMPANHADOS = []
 
 # SIMULADO: Lista de sugestões de investimento
@@ -69,7 +69,7 @@ fig_invest = None
 canvas_invest = None
 ax_invest = None
 
-# Variável global para a sessão de chat (necessária para manter o contexto)
+# Variável global para a sessão de chat
 chat_session = None
 
 def gerar_id_unico():
@@ -97,11 +97,10 @@ def limpar_relatorio(texto):
     texto = re.sub(r"^[ \t]+|[ \t]+$", "", texto, flags=re.MULTILINE)
     return texto.strip()
 
-# ---------- FUNÇÕES DE PERSISTÊNCIA DE DADOS (COM CORREÇÃO DE ATIVOS) ----------
+# ---------- FUNÇÕES DE PERSISTÊNCIA DE DADOS ----------
 def carregar_dados_locais():
     global gastos_detalhe_bruto, ganhos_detalhe_bruto, poupancas_detalhe, LISTA_ATIVOS_ACOMPANHADOS
     
-    # Lista padrão corrigida com .SA para yfinance
     default_ativos = ["PETR4.SA", "VALE3.SA"]
 
     if not os.path.exists(DATA_FILE):
@@ -132,11 +131,10 @@ def carregar_dados_locais():
             for a in data['lista_ativos_acompanhados']:
                 if isinstance(a, str) and a.strip():
                     ticker_limpo = a.strip().upper()
-                    # Garante o .SA para tickers comuns da B3
                     if not ticker_limpo.endswith(".SA") and len(ticker_limpo) < 6 and any(char.isdigit() for char in ticker_limpo):
                         ticker_limpo = f"{ticker_limpo}.SA"
                     carregados.append(ticker_limpo)
-            LISTA_ATIVOS_ACOMPANHADOS = list(set(carregados)) # Remove duplicados
+            LISTA_ATIVOS_ACOMPANHADOS = list(set(carregados))
         else:
             LISTA_ATIVOS_ACOMPANHADOS = default_ativos
 
@@ -178,21 +176,18 @@ def atualizar_renda_label():
 def recarregar_dados_agregados(is_silent=False):
     global dados, ganhos_df, poupancas_df, renda_total, total_gastos
     
-    # Atualiza ganhos agregados
     if not ganhos_detalhe_bruto.empty:
         ganhos_df = ganhos_detalhe_bruto.groupby("fonte", as_index=False)["valor"].sum()
         ganhos_df["fonte_normalizada"] = ganhos_df["fonte"].apply(normalizar_texto)
     else:
         ganhos_df = pd.DataFrame(columns=["fonte_normalizada", "fonte", "valor"])
         
-    # Atualiza gastos agregados
     if not gastos_detalhe_bruto.empty:
         dados = gastos_detalhe_bruto.groupby("departamento", as_index=False)["gasto_total"].sum()
         dados["departamento_normalizado"] = dados["departamento"].apply(normalizar_texto)
     else:
         dados = pd.DataFrame(columns=["departamento_normalizada", "departamento", "gasto_total"])
 
-    # Atualiza poupanças agregadas
     if not poupancas_detalhe.empty:
         poupancas_agg = poupancas_detalhe.groupby("meta", as_index=False).agg(
             valor_atingido=('valor_deposito', 'sum'),
@@ -388,7 +383,6 @@ def atualizar_tabela_poupanca():
 
 # ---------------------- FUNÇÕES DE LANÇAMENTO E IA ----------------------
 
-# Adicione esta função na parte de "FUNÇÕES DE DADOS/AGREGAÇÃO"
 def gerar_contexto_financeiro_ia():
     """Gera um resumo dos dados financeiros atuais para o contexto da IA."""
     
@@ -422,9 +416,7 @@ def gerar_contexto_financeiro_ia():
         except Exception:
             pass # Ignora se a coluna de data falhar
             
-    # 4. Sugestão de Perfil de Risco (Exemplo Simplificado)
-    # Você pode adicionar lógica mais complexa aqui, como:
-    # risco = "Alto" if total_gasto / renda_total > 0.8 else "Baixo"
+    # 4. Sugestão de Perfil de Risco
     if 'total_gasto' in locals():
         if total_gasto > renda_total * 0.7:
             contexto += "\nAVISO DE PERFIL: O usuário possui uma alta taxa de comprometimento da renda (Alto Risco).\n"
@@ -591,9 +583,6 @@ def deletar_lancamento_selecionado():
     if not selecionado:
         messagebox.showwarning("Aviso", "Selecione um item da tabela para deletar.")
         return
-        
-    # CORREÇÃO: Removida a linha que causava o TclError, 'selecionado' já é o iid
-    # iid_selecionado = tabela.item(selecionado, 'iid') 
     
     valores = tabela.item(selecionado, 'values')
     
@@ -875,10 +864,9 @@ def atualizar_graficos():
     canvas.draw()
     
     if fig_invest and ax_invest:
-        # Apenas garante que o gráfico de investimento não seja redesenhado aqui
         pass
 
-# ---------------------- FUNÇÕES DE INVESTIMENTO (ATUALIZADAS) ----------------------
+# ---------------------- FUNÇÕES DE INVESTIMENTO ----------------------
 
 def simular_sugestoes_investimento():
     """Simula sugestões de investimento baseadas em ativos comuns e um desempenho simulado."""
@@ -900,7 +888,6 @@ def atualizar_tabela_sugestoes():
         tabela_sugestoes.delete(row)
         
     for item in SUGESTOES_INVESTIMENTO:
-        # Formata o retorno para a exibição correta
         if item['risco'] == 'Médio':
             retorno_str = f"{item['retorno_simulado'] * 100:,.2f}%/mês"
         else:
@@ -925,15 +912,12 @@ def buscar_cotacoes_yfinance(tickers):
         return resultados
 
     try:
-        # Adicionado um timeout para evitar que o yfinance trave o UI
         data = yf.download(tickers, period="1d", interval="1d", progress=False, timeout=5)
         
         if data.empty or 'Close' not in data:
             return []
 
-        # Se houver mais de um ticker, a estrutura de data é um multi-index
         if len(tickers) > 1:
-            # Pega o último fechamento e abertura disponíveis
             last_close = data['Close'].iloc[-1]
             first_open = data['Open'].iloc[-1] if 'Open' in data else last_close
             
@@ -954,7 +938,6 @@ def buscar_cotacoes_yfinance(tickers):
                     "Variacao Dia": variacao_percentual
                 })
         elif len(tickers) == 1:
-            # Se houver apenas um ticker, o acesso é direto
             preco_atual = data['Close'].iloc[-1]
             preco_abertura = data['Open'].iloc[-1] if 'Open' in data else preco_atual
             
@@ -995,7 +978,6 @@ def atualizar_tabela_acompanhamento():
         variacao = item["Variacao Dia"]
         tag = 'alta' if variacao > 0 else ('baixa' if variacao < 0 else 'estavel')
         
-        # O iid é o Ticker COMPLETO (com .SA) para ser usado na deleção e plotagem
         tabela_acompanhamento.insert("", "end", iid=item["Ativo"], values=(
             item["Ativo"].replace(".SA", ""),
             f"R$ {item['Preco Atual']:,.2f}",
@@ -1014,20 +996,17 @@ def adicionar_ativo():
         messagebox.showwarning("Aviso", "Digite um ticker (Ex: PETR4, BBDC4).")
         return
     
-    # Lógica de padronização aprimorada
     ticker = ticker_bruto
     if not ticker_bruto.endswith(".SA") and len(ticker_bruto) < 6 and any(char.isdigit() for char in ticker_bruto):
-        ticker = f"{ticker_bruto}.SA" # Padroniza para B3
+        ticker = f"{ticker_bruto}.SA"
 
     if ticker in LISTA_ATIVOS_ACOMPANHADOS:
         messagebox.showinfo("Aviso", f"O ativo {ticker_bruto} já está na lista.")
         return
 
     try:
-        # Tenta buscar a info (teste de validade)
         ativo = yf.Ticker(ticker)
         info = ativo.info.get('longName', 'N/A')
-        # Pequeno ajuste para garantir que o ticker seja válido
         if info == 'N/A' and not ativo.info.get('regularMarketPrice'): 
              raise ValueError("Dados não encontrados ou ticker inválido.")
             
@@ -1047,7 +1026,6 @@ def remover_ativo():
         messagebox.showwarning("Aviso", "Selecione um ativo na tabela de acompanhamento para remover.")
         return
         
-    # O iid (selecionado) é o Ticker COMPLETO (Ex: PETR4.SA)
     ticker_completo = selecionado 
     ticker_simples = ticker_completo.replace(".SA", "")
     
@@ -1065,13 +1043,11 @@ def plotar_historico_ativo(event=None):
         limpar_grafico_investimento()
         return
         
-    # O selecionado aqui é o iid, que é o Ticker COMPLETO (Ex: PETR4.SA)
     ticker = selecionado 
     limpar_grafico_investimento()
     
     try:
         ativo = yf.Ticker(ticker)
-        # 6 meses de histórico
         df_historico = ativo.history(period="6mo") 
 
         if df_historico.empty:
@@ -1107,37 +1083,26 @@ def carregar_investimentos():
     limpar_grafico_investimento()
 
 # ---------------------- CHATBOT DE ECONOMIA ----------------------
-
-# ---------------------- CHATBOT DE ECONOMIA ----------------------
-
 def iniciar_sessao_chatbot():
-    """Inicia ou reinicia a sessão de chat do Gemini com System Instruction, INCLUINDO CONTEXTO FINANCEIRO."""
     global chat_session
     if not client:
-# ... (código existente) ...
+        messagebox.showwarning("Aviso", "Cliente Gemini não inicializado. Verifique sua chave API.")
         return
     
-    # >>>>>>>>>>>>> ALTERAÇÃO AQUI: GERAR E INSERIR CONTEXTO <<<<<<<<<<<<<
-    contexto_financeiro = gerar_contexto_financeiro_ia() # Chama a nova função
+    contexto_financeiro = gerar_contexto_financeiro_ia()
     
-    # Define a persona do chatbot
     system_instruction = (
         "Você é o 'Smart Budget AI Assistant', um especialista em finanças pessoais, economia e investimentos, com foco no mercado brasileiro. "
         "Seu tom deve ser amigável, educado e informativo. Responda apenas perguntas relacionadas a finanças, economia e investimentos. "
         "Se a pergunta estiver fora de contexto, peça ao usuário para refazer a pergunta focando em tópicos financeiros. "
         "Use negrito (**) e listas para organizar as informações complexas.\n\n"
-        
-        # INCLUA O CONTEXTO FINANCEIRO NO PROMPT INICIAL DO SISTEMA
         f"{contexto_financeiro}\n" 
         "***USE AS INFORMAÇÕES DE 'CONTEXTO FINANCEIRO DO USUÁRIO' ACIMA PARA PERSONALIZAR E EMBASAR SUAS RESPOSTAS SOBRE ORÇAMENTO E VIABILIDADE DE COMPRAS/PARCELAMENTOS.***"
     )
-    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     config = types.GenerateContentConfig(
         system_instruction=system_instruction
     )
-    
-# ... (restante do código da função continua igual) ...
     
     chat_session = client.chats.create(
         model="gemini-2.5-flash", 
@@ -1154,7 +1119,6 @@ def iniciar_sessao_chatbot():
     chat_text.config(state=tk.DISABLED)
 
 def enviar_mensagem_chatbot(event=None):
-    """Envia a mensagem do usuário ao Gemini e exibe a resposta."""
     global chat_session
     pergunta = entry_chat_input.get().strip()
     entry_chat_input.delete(0, tk.END)
@@ -1163,26 +1127,22 @@ def enviar_mensagem_chatbot(event=None):
         return
     
     if not client or not chat_session:
-        iniciar_sessao_chatbot() # Tenta iniciar se estiver nulo
+        iniciar_sessao_chatbot()
         if not chat_session:
              return 
 
-    # Exibe a pergunta do usuário
     chat_text.config(state=tk.NORMAL)
     chat_text.insert(tk.END, f"👤 Você: {pergunta}\n", "user")
     chat_text.config(state=tk.DISABLED)
     chat_text.see(tk.END)
     
-    # Desabilita o campo enquanto espera a resposta
     entry_chat_input.config(state=tk.DISABLED)
     btn_chat_send.config(state=tk.DISABLED)
     janela.update_idletasks()
     
     try:
-        # Chama a API
         response = chat_session.send_message(pergunta)
         
-        # Exibe a resposta
         chat_text.config(state=tk.NORMAL)
         chat_text.insert(tk.END, f"🤖 Chatbot: {response.text}\n\n", "assistent")
         chat_text.config(state=tk.DISABLED)
@@ -1195,12 +1155,9 @@ def enviar_mensagem_chatbot(event=None):
         chat_text.see(tk.END)
         
     finally:
-        # Reabilita o campo
         entry_chat_input.config(state=tk.NORMAL)
         btn_chat_send.config(state=tk.NORMAL)
         entry_chat_input.focus_set()
-
-
 # ---------------------- UI (ttkbootstrap) ----------------------
 janela = tb.Window(themename="flatly")
 janela.title("💸 Smart Budget - UX Melhorado")
@@ -1250,7 +1207,7 @@ notebook.add(aba_graficos, text="📊 Gráficos")
 aba_investimentos = ttk.Frame(notebook)
 notebook.add(aba_investimentos, text="📈 Investimentos (Mercado)")
 
-# --- NOVA ABA: CHATBOT ---
+# --- CHATBOT ---
 aba_chatbot = ttk.Frame(notebook)
 notebook.add(aba_chatbot, text="🤖 Assistente IA")
 
@@ -1417,12 +1374,11 @@ tabela_acompanhamento.heading("Preco Atual", text="Preço Atual (R$)")
 tabela_acompanhamento.heading("Variacao Dia", text="Variação Dia (%)")
 tabela_acompanhamento.heading("Tendencia", text="Tendência")
 
-# Ajuste das larguras das colunas para controle visual (ajusta-se ao Frame)
 tabela_acompanhamento.column("Ativo", anchor="center", width=100)
 tabela_acompanhamento.column("Preco Atual", anchor="e", width=120)
 tabela_acompanhamento.column("Variacao Dia", anchor="e", width=120)
 tabela_acompanhamento.column("Tendencia", anchor="center", width=80)
-# A largura total da tabela agora é 100+120+120+80 = 420px, e o Frame a abraça.
+
 
 tabela_acompanhamento.pack(side=tk.LEFT, fill="both", expand=True)
 
@@ -1430,7 +1386,6 @@ scroll_y_invest = ttk.Scrollbar(tabela_investimentos_frame, orient="vertical", c
 tabela_acompanhamento.configure(yscrollcommand=scroll_y_invest.set)
 scroll_y_invest.pack(side=tk.RIGHT, fill="y")
 
-# Evento de clique na tabela para plotar o histórico
 tabela_acompanhamento.bind("<<TreeviewSelect>>", plotar_historico_ativo)
 
 
@@ -1473,7 +1428,6 @@ btn_chat_send.pack(side=tk.RIGHT)
 
 # --- Inicialização ---
 
-# Inicializa o chatbot na primeira vez que a aba for selecionada
 def on_tab_change(event):
     if notebook.tab(notebook.select(), "text") == "🤖 Assistente IA":
         if chat_session is None:
@@ -1493,11 +1447,9 @@ try:
 except Exception:
     pass
 
-# Carregar dados e atualizar a interface inicial
 carregar_dados_locais() 
 carregar_investimentos() 
 
-# Configurar a chamada para salvar os dados ao fechar a janela
 janela.protocol("WM_DELETE_WINDOW", lambda: [salvar_dados_locais(), janela.destroy()])
 
 try:
